@@ -1,0 +1,110 @@
+ <!DOCTYPE html>
+<html>
+<head>
+	<title>Form Validate</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+	<script type="text/javascript" src="jquery.min.js"></script>
+	<script type="text/javascript" src="config.js"></script>
+	<style type="text/css">
+		input{
+			outline: none;
+			border: 1px solid #CCC;
+			padding: 2px;
+			transition: all .2s;
+		}
+		input.error{
+			border:1px solid red;
+		}
+		.error_msg{
+			font-size:12px;
+			color: red;
+			margin-left: 4px;
+		}
+	</style>
+</head>
+<body>
+	<form id="form">
+		<div>
+			<input type="number" name="number" required regular="regular.number" value="123" /><br/>
+			<span class="error_msg"></span>
+		</div>
+		<div>
+			<input type="text" name="text" regular="regular.userEmail" ><br/>
+			<span class="error_msg"></span>
+		</div>
+		<div>
+			<input type="date" name="time" required><br/>
+			<span class="error_msg"></span>
+		</div>
+		<input type="submit" >
+	</form>
+
+	<script type="text/javascript">
+	
+		$(function(){
+			var form = new formValidate({
+				error_msg:'.error_msg',
+				mode:'auto', // auto | custom
+				form: '#form'
+			});
+			$('input[type=submit]').on('click',function(){
+				return form.validate();
+			});
+		});
+		var formValidate = function(params){
+			this.mode = params.mode ? params.mode : 'auto';
+			this.error_msg = params.error_msg ? params.error_msg : '';
+			this.form = params.form ? params.form : $('form').eq(0); 
+		};
+
+		formValidate.prototype.validate = function(){
+			var errinputs = [];
+			var inputs =  $(this.form).find('input[type!=submit]');
+			for(var i=0; i<inputs.length; i++){
+				var itemVal = "";
+				var isRequired = false;
+				var pattern = "";
+				var resu = true;
+				var errmsg = "";
+				var errele = '.error_msg';
+
+				var item = $(this.form).find('input')[i];
+
+				itemVal = $(item).val();
+				isRequired = $(item).attr('required') ? true : false;
+				pattern = $(item).attr('regular') ? $(item).attr('regular') : '';
+				errmsg = $(item).attr('title') ? $(item).attr('title') : '内容格式不符合哦';
+				if(pattern!='' && pattern.indexOf('regular.') != -1){
+					pattern = pattern.substr(pattern.indexOf('regular.')+8);
+					errmsg = config.regular[pattern][1];
+					pattern = config.regular[pattern][0];
+					console.log(errmsg);
+					$(item).attr('title',errmsg);
+				}
+
+				resu = pattern!='' ? resu = pattern.test(itemVal) : resu;
+				resu = !isRequired && itemVal=='' ? true : resu;
+				resu = isRequired && itemVal=='' ? false : resu;
+
+				if(!resu){
+					$(this.form).find('input').eq(i).addClass('error').parent().find(errele).html(errmsg);
+					errinputs.push({
+						$ele: $('input').eq(i)
+					})
+				}else{
+					console.log($(this.form).find('input').eq(i).parent());
+					$(this.form).find('input').eq(i).removeClass('error').parent().find(errele).html('');
+				}
+			}
+			if(this.mode=='auto'){
+				if(errinputs.length>0)
+					return false;
+				else
+					return true;
+			}else if(this.mode=='custom'){
+				return errinputs;
+			}
+		}
+	</script>
+</body>
+</html>
