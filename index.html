@@ -20,6 +20,12 @@
 			color: red;
 			margin-left: 4px;
 		}
+		.btnCommit{
+			background-color: green;
+		}
+		.btnCommit.error{
+			background-color: red;
+		}
 	</style>
 </head>
 <body>
@@ -36,7 +42,7 @@
 			<input type="date" name="time" required><br/>
 			<span class="error_msg"></span>
 		</div>
-		<input type="submit" >
+		<input class="btnCommit error" type="submit" >
 	</form>
 
 	<script type="text/javascript">
@@ -44,11 +50,21 @@
 		$(function(){
 			var form = new formValidate({
 				error_msg:'.error_msg',
-				mode:'auto', // auto | custom
 				form: '#form'
 			});
+			$('#form input').on('input',function(){
+				form.validateEle($(this));
+				if(form.validateResu().length < 1){
+					$('.btnCommit').removeClass('error');
+				}else{
+					$('.btnCommit').addClass('error');
+				}
+			});
 			$('input[type=submit]').on('click',function(){
-				return form.validate();
+				if($(this).hasClass('error'))
+					return false;
+				else
+					return true;
 			});
 		});
 		var formValidate = function(params){
@@ -57,6 +73,43 @@
 			this.form = params.form ? params.form : $('form').eq(0); 
 		};
 
+		// validate ele 
+		formValidate.prototype.validateEle = function($ele){
+
+				var itemVal = "";
+				var isRequired = false;
+				var pattern = "";
+				var resu = true;
+				var errmsg = "";
+				var errele = '.error_msg';
+
+				var item = $ele;
+
+				itemVal = $(item).val();
+				isRequired = $(item).attr('required') ? true : false;
+				pattern = $(item).attr('regular') ? $(item).attr('regular') : '';
+				errmsg = $(item).attr('title') ? $(item).attr('title') : '内容格式不符合哦';
+				if(pattern!='' && pattern.indexOf('regular.') != -1){
+					pattern = pattern.substr(pattern.indexOf('regular.')+8);
+					errmsg = config.regular[pattern][1];
+					pattern = config.regular[pattern][0];
+					$(item).attr('title',errmsg);
+				}
+
+				resu = pattern!='' ? resu = pattern.test(itemVal) : resu;
+				resu = !isRequired && itemVal=='' ? true : resu;
+				resu = isRequired && itemVal=='' ? false : resu;
+
+				if(!resu){
+					$ele.addClass('error').parent().find(errele).html(errmsg);
+					return false;
+				}else{
+					$ele.removeClass('error').parent().find(errele).html('');
+					return true;
+				}
+		}
+
+		// validate form 
 		formValidate.prototype.validate = function(){
 			var errinputs = [];
 			var inputs =  $(this.form).find('input[type!=submit]');
@@ -96,14 +149,48 @@
 					$(this.form).find('input').eq(i).removeClass('error').parent().find(errele).html('');
 				}
 			}
-			if(this.mode=='auto'){
-				if(errinputs.length>0)
-					return false;
-				else
-					return true;
-			}else if(this.mode=='custom'){
-				return errinputs;
+			if(errinputs.length>0)
+				return false;
+			else
+				return true;
+		}
+
+		// get validate resu
+		formValidate.prototype.validateResu = function(){
+			var errinputs = [];
+			var inputs =  $(this.form).find('input[type!=submit]');
+			for(var i=0; i<inputs.length; i++){
+				var itemVal = "";
+				var isRequired = false;
+				var pattern = "";
+				var resu = true;
+				var errmsg = "";
+				var errele = '.error_msg';
+
+				var item = $(this.form).find('input')[i];
+
+				itemVal = $(item).val();
+				isRequired = $(item).attr('required') ? true : false;
+				pattern = $(item).attr('regular') ? $(item).attr('regular') : '';
+				errmsg = $(item).attr('title') ? $(item).attr('title') : '内容格式不符合哦';
+				if(pattern!='' && pattern.indexOf('regular.') != -1){
+					pattern = pattern.substr(pattern.indexOf('regular.')+8);
+					errmsg = config.regular[pattern][1];
+					pattern = config.regular[pattern][0];
+					$(item).attr('title',errmsg);
+				}
+
+				resu = pattern!='' ? resu = pattern.test(itemVal) : resu;
+				resu = !isRequired && itemVal=='' ? true : resu;
+				resu = isRequired && itemVal=='' ? false : resu;
+
+				if(!resu){
+					errinputs.push({
+						$ele: $('input').eq(i)
+					})
+				}
 			}
+			return errinputs;
 		}
 	</script>
 </body>
